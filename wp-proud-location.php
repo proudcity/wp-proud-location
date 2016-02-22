@@ -22,7 +22,7 @@ class ProudLocation extends \ProudPlugin {
   /*public function __construct() {
     add_action( 'init', array($this, 'initialize') );
     add_action( 'admin_init', array($this, 'location_admin') );
-    add_action( 'save_post', array($this, 'add_location_fields'), 10, 2 );
+    
     //add_filter( 'template_include', 'location_template' );
     add_action( 'rest_api_init', array($this, 'location_rest_support') );
   }*/
@@ -34,11 +34,12 @@ class ProudLocation extends \ProudPlugin {
     ) );*/
 
     $this->post_type = 'proud_location';
+    $this->taxonomy = 'location-taxonomy';
 
     $this->hook( 'init', 'create_location' );
     $this->hook( 'admin_init', 'location_admin' );
     //$this->hook( 'plugins_loaded', 'agency_init_widgets' );
-    $this->hook( 'save_post', 'add_lWest Carrollton City School Districtocation_fields', 10, 2 );
+    $this->hook( 'save_post', 'add_location_fields', 10, 2 );
     $this->hook( 'rest_api_init', 'location_rest_support' );
     $this->hook( 'init', 'create_taxonomy' );
     //add_filter( 'template_include', array($this, 'agency_template') );
@@ -87,8 +88,8 @@ class ProudLocation extends \ProudPlugin {
 
   function create_taxonomy() {
     register_taxonomy(
-        'location_taxonomy',
-        'location',
+        $this->taxonomy,
+        $this->post_type,
         array(
             'labels' => array(
                 'name' => 'Location Categories',
@@ -137,8 +138,8 @@ class ProudLocation extends \ProudPlugin {
    */
   public function location_rest_metadata( $object, $field_name, $request ) {
       $return = array();
-      foreach ( $this->build_fields($object[ 'id' ]) as $key => $field) {
-        if ($value = get_post_meta( $object[ 'id' ], $key, true )) {
+      foreach ( $this->build_fields($id) as $key => $field) {
+        if ($value = get_post_meta( $id, $key, true )) {
           $return[$key] = $value;
         }
       }
@@ -151,43 +152,43 @@ class ProudLocation extends \ProudPlugin {
           '#type' => 'text',
           '#title' => __pcHelp('Address'),
           '#name' => 'address',
-          '#value' => get_post_meta( $object[ 'id' ], 'address', true )
+          '#value' => get_post_meta( $id, 'address', true )
         ],
         'address2' => [
           '#type' => 'text',
           '#title' => __pcHelp('Address 2'),
           '#name' => 'address2',
-          '#value' => get_post_meta( $object[ 'id' ], 'city', true )
+          '#value' => get_post_meta( $id, 'address2', true )
         ],
         'city' => [
           '#type' => 'text',
           '#title' => __pcHelp('City'),
           '#name' => 'city',
-          '#value' => get_post_meta( $object[ 'id' ], 'city', true )
+          '#value' => get_post_meta( $id, 'city', true )
         ],
         'state' => [
           '#type' => 'text',
           '#title' => __pcHelp('State'),
           '#name' => 'state',
-          '#value' => get_post_meta( $object[ 'id' ], 'state', true )
+          '#value' => get_post_meta( $id, 'state', true )
         ],
         'zip' => [
           '#type' => 'text',
           '#title' => __pcHelp('Zip'),
           '#name' => 'zip',
-          '#value' => get_post_meta( $object[ 'id' ], 'zip', true )
+          '#value' => get_post_meta( $id, 'zip', true )
         ],
         'lat' => [
           '#type' => 'text',
           '#title' => __pcHelp('Latitude'),
           '#name' => 'lat',
-          '#value' => get_post_meta( $object[ 'id' ], 'lat', true )
+          '#value' => get_post_meta( $id, 'lat', true )
         ],
         'lng' => [
           '#type' => 'text',
           '#title' => __pcHelp('Longitude'),
           '#name' => 'lng',
-          '#value' => get_post_meta( $object[ 'id' ], 'lng', true)
+          '#value' => get_post_meta( $id, 'lng', true)
         ],
     ];
     return $return;
@@ -199,25 +200,25 @@ class ProudLocation extends \ProudPlugin {
           '#type' => 'text',
           '#title' => __pcHelp('Email'),
           '#name' => 'email',
-          '#value' => get_post_meta( $object[ 'id' ], 'email', true )
+          '#value' => get_post_meta( $id, 'email', true )
         ],
         'phone' => [
           '#type' => 'text',
           '#title' => __pcHelp('Phone'),
           '#name' => 'phone',
-          '#value' => get_post_meta( $object[ 'id' ], 'phone', true )
+          '#value' => get_post_meta( $id, 'phone', true )
         ],
         'website' => [
           '#type' => 'text',
           '#title' => __pcHelp('Website'),
           '#name' => 'website',
-          '#value' => get_post_meta( $object[ 'id' ], 'website', true )
+          '#value' => get_post_meta( $id, 'website', true )
         ],
         'hours' => [
           '#type' => 'textarea',
           '#title' => __pcHelp('Hours'),
           '#name' => 'hours',
-          '#value' => get_post_meta( $object[ 'id' ], 'hours', true )
+          '#value' => get_post_meta( $id, 'hours', true )
         ],
     ];
     return $return;
@@ -263,11 +264,11 @@ class ProudLocation extends \ProudPlugin {
   /**
    * Saves contact metadata fields 
    */
-  public function add_location_fields( $id, $location ) {
+  public function add_location_fields( $id, $location ) {print_r($_POST);print_r($id);print_R($location);
     if ( $location->post_type == $this->post_type ) {
       foreach ($this->build_fields() as $key => $field) {
         if ( !empty( $_POST[$key] ) ) {  // @todo: check if it has been set already to allow clearing of value
-          update_post_meta( $id, $key, $_POST[$field] );
+          update_post_meta( $id, $key, $_POST[$key] );
         }
       }
 
