@@ -92,9 +92,9 @@ class ProudLocation extends \ProudPlugin {
         $this->post_type,
         array(
             'labels' => array(
-                'name' => 'Location Categories',
-                'add_new_item' => 'Add New Document Category',
-                'new_item_name' => "New Document Category"
+                'name' => 'Location Layer',
+                'add_new_item' => 'Add New Location Layer',
+                'new_item_name' => "New Layer"
             ),
             'show_ui' => true,
             'show_tagcloud' => false,
