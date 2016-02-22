@@ -264,7 +264,7 @@ class ProudLocation extends \ProudPlugin {
   /**
    * Saves contact metadata fields 
    */
-  public function add_location_fields( $id, $location ) {print_r($_POST);print_r($id);print_R($location);
+  public function add_location_fields( $id, $location ) {
     if ( $location->post_type == $this->post_type ) {
       foreach ($this->build_fields() as $key => $field) {
         if ( !empty( $_POST[$key] ) ) {  // @todo: check if it has been set already to allow clearing of value
