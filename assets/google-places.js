@@ -60,7 +60,7 @@
   }
 
   // Cleanup
-  $('#-lat, #-lng').hide();
+  //$('#-lat, #-lng').hide();
   $('#title').attr('placeholder', '');
   $('#postdivrich').appendTo('#location_description_meta_box');
 

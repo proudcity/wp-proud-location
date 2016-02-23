@@ -138,7 +138,7 @@ class ProudLocation extends \ProudPlugin {
    */
   public function location_rest_metadata( $object, $field_name, $request ) {
       $return = array();
-      foreach ( $this->build_fields() as $key => $field) {
+      foreach ( $this->build_fields($object['id']) as $key => $field) {
         if ($value = get_post_meta( $object['id'], $key, true )) {
           $return[$key] = $value;
         }
@@ -178,17 +178,44 @@ class ProudLocation extends \ProudPlugin {
           '#name' => 'zip',
           '#value' => get_post_meta( $id, 'zip', true )
         ],
+        'custom_latlng' => [
+          '#type' => 'checkbox',
+          '#title' => __pcHelp('Customize lat/lng'),
+          '#name' => 'custom_latlng',
+          '#return_value' => '1',
+          '#label_above' => false,
+          '#replace_title' => __pcHelp( 'Enter custom Latitude/Longitude' ),
+        ],
         'lat' => [
           '#type' => 'text',
           '#title' => __pcHelp('Latitude'),
           '#name' => 'lat',
-          '#value' => get_post_meta( $id, 'lat', true )
+          '#value' => get_post_meta( $id, 'lat', true ),
+          '#states' => [
+            'visible' => [
+              'custom_latlng' => [
+                'operator' => '==',
+                'value' => ['1'],
+                'glue' => '||'
+              ],
+            ],
+          ],
         ],
         'lng' => [
           '#type' => 'text',
           '#title' => __pcHelp('Longitude'),
           '#name' => 'lng',
-          '#value' => get_post_meta( $id, 'lng', true)
+          '#value' => get_post_meta( $id, 'lng', true),
+          '#description' => __pcHelp('To automatically geocode the lat/lng from your address fields, leave both the Latitude and Longitude fields blank.'),
+          '#states' => [
+            'visible' => [
+              'custom_latlng' => [
+                'operator' => '==',
+                'value' => ['1'],
+                'glue' => '||'
+              ],
+            ],
+          ],
         ],
     ];
     return $return;
@@ -266,13 +293,37 @@ class ProudLocation extends \ProudPlugin {
    */
   public function add_location_fields( $id, $location ) {
     if ( $location->post_type == $this->post_type ) {
+      if (empty($_POST['lat']) || empty($_POST['lng'])) {
+        // @todo: use google_places_key here?
+        $url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . urlencode($this->address_string($_POST));
+        $response = wp_remote_get( $url );
+        if( is_array($response) ) {
+          $body = json_decode($response['body']);
+          if ( !empty($body->results[0]) ) {
+            $geo = $body->results[0]->geometry->location; // use the content
+            print_r($geo);
+            $_POST['lat'] = $geo->lat;
+            $_POST['lng'] = $geo->lng;
+          }
+        }
+      }
+
       foreach ($this->build_fields() as $key => $field) {
         if ( !empty( $_POST[$key] ) ) {  // @todo: check if it has been set already to allow clearing of value
           update_post_meta( $id, $key, $_POST[$key] );
         }
       }
-
     }
+  }
+
+  /**
+   * Returns a (string) $address from an (object|array) $location.
+   */
+  public function address_string($location) {
+    $location = (array) $location;
+    return $location['address'] .
+      (!empty($location['address2']) ? ', ' . $location['address'] : '') .
+      $location['city'] . ', ' . $location['state'] . ' ' . $location['zip'];
   }
 
 } // class
