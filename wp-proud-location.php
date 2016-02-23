@@ -92,7 +92,7 @@ class ProudLocation extends \ProudPlugin {
         $this->post_type,
         array(
             'labels' => array(
-                'name' => 'Location Layer',
+                'name' => 'Location Layers',
                 'add_new_item' => 'Add New Location Layer',
                 'new_item_name' => "New Layer"
             ),
@@ -129,7 +129,7 @@ class ProudLocation extends \ProudPlugin {
               'update_callback' => null,
               'schema'          => null,
           )
-      );
+    );
   }
 
   /**
@@ -143,6 +143,14 @@ class ProudLocation extends \ProudPlugin {
           $return[$key] = $value;
         }
       }
+      $return['terms'] = wp_get_post_terms($object['id'], $this->taxonomy, array("fields" => "all"));
+      foreach ($return['terms'] as $term) {
+        if (empty($return['icon']) && $term->slug != 'featured' && $term->slug != 'all') {
+          $return['icon'] = $term->slug;
+        }
+      }
+
+ 
       return $return;
   }
 
