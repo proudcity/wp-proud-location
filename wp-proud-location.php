@@ -122,7 +122,7 @@ class ProudLocation extends \ProudPlugin {
   }
 
   public function location_rest_support() {
-    register_api_field( 'location',
+    register_api_field( 'proud_location',
           'meta',
           array(
               'get_callback'    => array( $this, 'location_rest_metadata' ),
@@ -134,12 +134,12 @@ class ProudLocation extends \ProudPlugin {
 
   /**
    * Alter the REST endpoint.
-   * Add metadata to t$forms = RGFormsModel::get_forms( 1, 'title' );he post response
+   * Add metadata to the post response
    */
   public function location_rest_metadata( $object, $field_name, $request ) {
       $return = array();
-      foreach ( $this->build_fields($id) as $key => $field) {
-        if ($value = get_post_meta( $id, $key, true )) {
+      foreach ( $this->build_fields() as $key => $field) {
+        if ($value = get_post_meta( $object['id'], $key, true )) {
           $return[$key] = $value;
         }
       }
