@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Poud Location
+Plugin Name: Proud Location
 Plugin URI: http://proudcity.com/
 Description: Declares an Location custom post type.
 Version: 1.0
