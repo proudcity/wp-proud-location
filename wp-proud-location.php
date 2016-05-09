@@ -161,7 +161,7 @@ class ProudLocation extends \ProudPlugin {
           '#title' => __pcHelp('Address'),
           '#name' => 'address',
           '#value' => get_post_meta( $id, 'address', true ),
-          '#args' => array('autocomplete' => 'off')
+          '#args' => array('autocomplete' => 'false')
         ],
         'address2' => [
           '#type' => 'text',
