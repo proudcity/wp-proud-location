@@ -160,7 +160,8 @@ class ProudLocation extends \ProudPlugin {
           '#type' => 'text',
           '#title' => __pcHelp('Address'),
           '#name' => 'address',
-          '#value' => get_post_meta( $id, 'address', true )
+          '#value' => get_post_meta( $id, 'address', true ),
+          '#args' => array('autocomplete' => 'off')
         ],
         'address2' => [
           '#type' => 'text',
