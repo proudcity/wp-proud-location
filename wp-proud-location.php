@@ -43,6 +43,14 @@ class ProudLocation extends \ProudPlugin {
     $this->hook( 'rest_api_init', 'location_rest_support' );
     $this->hook( 'init', 'create_taxonomy' );
     //add_filter( 'template_include', array($this, 'agency_template') );
+    add_filter( 'proud_search_exclude', array( $this, 'searchfilter' ) );
+
+  }
+
+  // Limit search results
+  public function searchfilter($posts) {
+    array_push($posts, 'proud_location');
+    return $posts;
   }
 
 
@@ -191,6 +199,7 @@ class ProudLocation extends \ProudPlugin {
           '#type' => 'checkbox',
           '#title' => __pcHelp('Customize lat/lng'),
           '#name' => 'custom_latlng',
+          '#value' => get_post_meta( $id, 'custom_latlng', 0 ),
           '#return_value' => '1',
           '#label_above' => false,
           '#replace_title' => __pcHelp( 'Enter custom Latitude/Longitude' ),
@@ -283,13 +292,13 @@ class ProudLocation extends \ProudPlugin {
     <?php
 
     $this->fields = $this->build_fields_address($location->ID);
-    $form = new \Proud\Core\FormHelper( $this->key, $this->fields );
+    $form = new \Proud\Core\FormHelper( 'proud-location', $this->fields );
     $form->printFields();
   }
 
   public function display_contact_meta_box( $location ) {
     $this->fields = $this->build_fields_contact($location->ID);
-    $form = new \Proud\Core\FormHelper( $this->key, $this->fields );
+    $form = new \Proud\Core\FormHelper( 'proud-location-contact', $this->fields );
     $form->printFields();
   }
 
