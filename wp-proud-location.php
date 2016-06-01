@@ -199,7 +199,7 @@ class ProudLocation extends \ProudPlugin {
           '#type' => 'checkbox',
           '#title' => __pcHelp('Customize lat/lng'),
           '#name' => 'custom_latlng',
-          '#value' => get_post_meta( $id, 'custom_latlng', 0 ),
+          '#value' => get_post_meta( $id, 'custom_latlng', true ),
           '#return_value' => '1',
           '#label_above' => false,
           '#replace_title' => __pcHelp( 'Enter custom Latitude/Longitude' ),
