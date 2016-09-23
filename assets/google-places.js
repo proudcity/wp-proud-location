@@ -5,19 +5,25 @@
         new google.maps.LatLng(location_coords.lat, location_coords.lng),
         new google.maps.LatLng(location_coords.lat, location_coords.lng))
   };
-  var places;
+  var places, places1;
   google.maps.event.addDomListener(window, 'load', function () {
     places = new google.maps.places.Autocomplete(document.getElementById('address'), options);
-    google.maps.event.addListener(places, 'place_changed', autocomplete_change);
-    places = new google.maps.places.Autocomplete(document.getElementById('title'), options);
-    google.maps.event.addListener(places, 'place_changed', function() {return autocomplete_change(title)} );
+    google.maps.event.addListener(places, 'place_changed', function() {
+      return autocomplete_change(places, true)
+    } );
+    places1 = new google.maps.places.Autocomplete(document.getElementById('title'), options);
+    google.maps.event.addListener(places1, 'place_changed', function() {
+      return autocomplete_change(places1)
+    } );
   });
 
-  var autocomplete_change = function ( title ) {
+  var autocomplete_change = function ( places, setTitle ) {
     $('#city-input-wrapper-header').addClass('active');
     var place = places.getPlace();
-    //console.log(place);
     var address = '';
+    if (setTitle && place.name) {
+      setField('title', place.name, true);
+    }
     for (var i=0; i<place.address_components.length; i++) {
       value = place.address_components[i].short_name;
       switch (place.address_components[i].types[0]) {
@@ -25,7 +31,6 @@
           address = value;
           break;
         case 'route':
-        console.log(address);
           setField('address', address + ' ' + value, true);
           break;
         case 'locality':
@@ -63,5 +68,16 @@
   //$('#-lat, #-lng').hide();
   $('#title').attr('placeholder', '');
   $('#postdivrich').appendTo('#location_description_meta_box');
+
+  // The form would submit when Enter was pressed previously, which isn't
+  // great for the location autocomplete
+  $('#post').on('keyup keypress', function(e) {
+    var keyCode = e.keyCode || e.which;
+    if (keyCode === 13) { 
+      e.preventDefault();
+      return false;
+    }
+  });
+
 
 })(jQuery);
