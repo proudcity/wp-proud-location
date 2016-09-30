@@ -279,7 +279,7 @@ class ProudLocation extends \ProudPlugin {
   public function display_address_meta_box( $location ) {
 
     $path = plugins_url('assets/',__FILE__);
-    wp_enqueue_script( 'google-places-api', '//maps.googleapis.com/maps/api/js?key='.get_option('google_places_key', true) .'&libraries=places' );
+    wp_enqueue_script( 'google-places-api', '//maps.googleapis.com/maps/api/js?key='.get_option('google_api_key', true) .'&libraries=places' );
     wp_enqueue_script( 'google-places-field', $path . 'google-places.js' );
     // @todo: Proud settings aren't set on backend
     ?>
@@ -312,7 +312,7 @@ class ProudLocation extends \ProudPlugin {
   public function add_location_fields( $id, $location ) {
     if ( $location->post_type == $this->post_type ) {
       if (empty($_POST['lat']) || empty($_POST['lng'])) {
-        // @todo: use google_places_key here?
+        // @todo: use google_api_key here?
         $url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . urlencode($this->address_string($_POST));
         $response = wp_remote_get( $url );
         if( is_array($response) ) {
