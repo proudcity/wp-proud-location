@@ -1,13 +1,15 @@
 (function($) {
-  var options = {
-    componentRestrictions: { country: "US" },
-    bounds: new google.maps.LatLngBounds(
-        new google.maps.LatLng(location_coords.lat, location_coords.lng),
-        new google.maps.LatLng(location_coords.lat, location_coords.lng))
-  };
+  var settings = window.proud_location,
+      contact = window.proud_location_contact
+      options = {
+        componentRestrictions: { country: "US" },
+        bounds: new google.maps.LatLngBounds(
+            new google.maps.LatLng(settings.lat, settings.lng),
+            new google.maps.LatLng(settings.lat, settings.lng))
+      };
   var places, places1;
   google.maps.event.addDomListener(window, 'load', function () {
-    places = new google.maps.places.Autocomplete(document.getElementById('address'), options);
+    places = new google.maps.places.Autocomplete(document.getElementById(settings.address_id), options);
     google.maps.event.addListener(places, 'place_changed', function() {
       return autocomplete_change(places, true)
     } );
@@ -18,7 +20,6 @@
   });
 
   var autocomplete_change = function ( places, setTitle ) {
-    $('#city-input-wrapper-header').addClass('active');
     var place = places.getPlace();
     var address = '';
     if (setTitle && place.name) {
@@ -31,29 +32,29 @@
           address = value;
           break;
         case 'route':
-          setField('address', address + ' ' + value, true);
+          setField( settings.address_id, address + ' ' + value, true);
           break;
         case 'locality':
-          setField('city', value);
+          setField( settings.city_id, value);
           break;
         case 'administrative_area_level_1':
-          setField('state', value);
+          setField( settings.state_id, value);
           break;
         case 'postal_code':
-          setField('zip', value);
+          setField( settings.zip_id, value);
           break;
       };
     }
     if (title != undefined && title && place.types[0] != 'street_address') {
       setField( 'title', place.name, true );
     }
-    setField( 'lat', place.geometry.location.lat, true );
-    setField( 'lng', place.geometry.location.lng, true );
-    setField( 'website', place.website, true );
-    setField( 'email', place.email, true );
-    setField( 'phone', place.formatted_phone_number, true );
+    setField( settings.lat_id, place.geometry.location.lat, true );
+    setField( settings.lng_id, place.geometry.location.lng, true );
+    setField( settings.website_id, place.website, true );
+    setField( settings.email_id, place.email, true );
+    setField( settings.phone_id, place.formatted_phone_number, true );
     if (place.opening_hours != undefined && place.opening_hours.weekday_text != undefined ) {
-      setField('hours', place.opening_hours.weekday_text.join("\r\n"));
+      setField( settings.hours_id, place.opening_hours.weekday_text.join("\r\n"));
     }
     return false;
   }

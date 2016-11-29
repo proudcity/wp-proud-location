@@ -19,35 +19,25 @@ if ( ! class_exists( 'ProudPlugin' ) ) {
 
 class ProudLocation extends \ProudPlugin {
 
-  /*public function __construct() {
-    add_action( 'init', array($this, 'initialize') );
-    add_action( 'admin_init', array($this, 'location_admin') );
-    
-    //add_filter( 'template_include', 'location_template' );
-    add_action( 'rest_api_init', array($this, 'location_rest_support') );
-  }*/
-
   public function __construct() {
-    /*parent::__construct( array(
+    parent::__construct( array(
       'textdomain'     => 'wp-proud-location',
       'plugin_path'    => __FILE__,
-    ) );*/
+    ) );
 
     $this->post_type = 'proud_location';
     $this->taxonomy = 'location-taxonomy';
 
     $this->hook( 'init', 'create_location' );
-    $this->hook( 'admin_init', 'location_admin' );
-    //$this->hook( 'plugins_loaded', 'agency_init_widgets' );
-    $this->hook( 'save_post', 'add_location_fields', 10, 2 );
     $this->hook( 'rest_api_init', 'location_rest_support' );
     $this->hook( 'init', 'create_taxonomy' );
-    //add_filter( 'template_include', array($this, 'agency_template') );
     add_filter( 'proud_search_exclude', array( $this, 'searchfilter' ) );
 
   }
 
-  // Limit search results
+  /**
+   * Adds locations to search blacklist
+   */
   public function searchfilter($posts) {
     array_push($posts, 'proud_location');
     return $posts;
@@ -111,24 +101,6 @@ class ProudLocation extends \ProudPlugin {
     );
   }
 
-  public function location_admin() {
-    add_meta_box( 'location_address_meta_box',
-      'Address',
-      array($this, 'display_address_meta_box'),
-      $this->post_type, 'normal', 'high'
-    );
-    add_meta_box( 'location_contact_meta_box',
-      'Contact information',
-      array($this, 'display_contact_meta_box'),
-      $this->post_type, 'normal', 'high'
-    );
-    add_meta_box( 'location_description_meta_box',
-      'Description',
-      array($this, 'display_description_meta_box'),
-      $this->post_type, 'normal', 'high'
-    );
-  }
-
   public function location_rest_support() {
     register_api_field( 'proud_location',
           'meta',
@@ -145,193 +117,156 @@ class ProudLocation extends \ProudPlugin {
    * Add metadata to the post response
    */
   public function location_rest_metadata( $object, $field_name, $request ) {
-      $return = array();
-      foreach ( $this->build_fields($object['id']) as $key => $field) {
-        if ($value = get_post_meta( $object['id'], $key, true )) {
-          $return[$key] = $value;
-        }
-      }
-      $return['terms'] = wp_get_post_terms($object['id'], $this->taxonomy, array("fields" => "all"));
-      foreach ($return['terms'] as $term) {
-        if (empty($return['icon']) && $term->slug != 'featured' && $term->slug != 'all') {
+      $Address = new LocationAddress;
+      $return = $Address->get_options( $object[ 'id' ] );
+      $return['terms'] = wp_get_post_terms( $object['id'], $this->taxonomy, array( "fields" => "all" ) );
+      foreach ( $return['terms'] as $term ) {
+        if ( empty( $return['icon'] ) && $term->slug != 'featured' && $term->slug != 'all' ) {
           $return['icon'] = $term->slug;
         }
       }
-
- 
       return $return;
   }
+} // class
+new ProudLocation;
 
-  public function build_fields_address($id) {
-    return [  
-        'address' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Address'),
-          '#name' => 'address',
-          '#value' => get_post_meta( $id, 'address', true ),
-          '#args' => array('autocomplete' => 'false')
-        ],
-        'address2' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Address 2'),
-          '#name' => 'address2',
-          '#value' => get_post_meta( $id, 'address2', true )
-        ],
-        'city' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('City'),
-          '#name' => 'city',
-          '#value' => get_post_meta( $id, 'city', true )
-        ],
-        'state' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('State'),
-          '#name' => 'state',
-          '#value' => get_post_meta( $id, 'state', true )
-        ],
-        'zip' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Zip'),
-          '#name' => 'zip',
-          '#value' => get_post_meta( $id, 'zip', true )
-        ],
-        'custom_latlng' => [
-          '#type' => 'checkbox',
-          '#title' => __pcHelp('Customize lat/lng'),
-          '#name' => 'custom_latlng',
-          '#value' => get_post_meta( $id, 'custom_latlng', true ),
-          '#return_value' => '1',
-          '#label_above' => false,
-          '#replace_title' => __pcHelp( 'Enter custom Latitude/Longitude' ),
-        ],
-        'lat' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Latitude'),
-          '#name' => 'lat',
-          '#value' => get_post_meta( $id, 'lat', true ),
-          '#states' => [
-            'visible' => [
-              'custom_latlng' => [
-                'operator' => '==',
-                'value' => ['1'],
-                'glue' => '||'
-              ],
-            ],
-          ],
-        ],
-        'lng' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Longitude'),
-          '#name' => 'lng',
-          '#value' => get_post_meta( $id, 'lng', true),
-          '#description' => __pcHelp('To automatically geocode the lat/lng from your address fields, leave both the Latitude and Longitude fields blank.'),
-          '#states' => [
-            'visible' => [
-              'custom_latlng' => [
-                'operator' => '==',
-                'value' => ['1'],
-                'glue' => '||'
-              ],
-            ],
-          ],
-        ],
-    ];
-    return $return;
+// LocationAddress meta box
+class LocationAddress extends \ProudMetaBox {
+
+  public $options = [  // Meta options, key => default                             
+    'address' => '',
+    'address2' => '',
+    'city' => '',
+    'state' => '',
+    'zip' => '',
+    'custom_latlng' => '',
+    'lat' => '',
+    'lng' => '',
+    'email' => '',
+    'phone' => '',
+    'website' => '',
+    'hours' => '',
+  ];
+
+  public function __construct() {
+    parent::__construct( 
+      'location_address', // key
+      'Address', // title
+      'proud_location', // screen
+      'normal',  // position
+      'high' // priority
+    );
   }
-
-  public function build_fields_contact($id) {
-    return [  
-        'email' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Email'),
-          '#name' => 'email',
-          '#value' => get_post_meta( $id, 'email', true )
-        ],
-        'phone' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Phone'),
-          '#name' => 'phone',
-          '#value' => get_post_meta( $id, 'phone', true )
-        ],
-        'website' => [
-          '#type' => 'text',
-          '#title' => __pcHelp('Website'),
-          '#name' => 'website',
-          '#value' => get_post_meta( $id, 'website', true )
-        ],
-        'hours' => [
-          '#type' => 'textarea',
-          '#title' => __pcHelp('Hours'),
-          '#name' => 'hours',
-          '#value' => get_post_meta( $id, 'hours', true )
-        ],
-    ];
-    return $return;
-  }
-
-  public function build_fields($id) {
-    $this->fields = array_merge( $this->build_fields_address($id), $this->build_fields_contact($id) );
-    return $this->fields;
-  }
-
-
-
-  public function display_address_meta_box( $location ) {
-
-    $path = plugins_url('assets/',__FILE__);
-    wp_enqueue_script( 'google-places-api', '//maps.googleapis.com/maps/api/js?key='.get_option('google_api_key', true) .'&libraries=places' );
-    wp_enqueue_script( 'google-places-field', $path . 'google-places.js' );
-    // @todo: Proud settings aren't set on backend
-    ?>
-      <script>
-      var location_coords = {
-        lat: <?php echo get_option('lat', true); ?>,
-        lng: <?php echo get_option('lng', true); ?>
-      };
-      </script>
-    <?php
-
-    $this->fields = $this->build_fields_address($location->ID);
-    $form = new \Proud\Core\FormHelper( 'proud-location', $this->fields );
-    $form->printFields();
-  }
-
-  public function display_contact_meta_box( $location ) {
-    $this->fields = $this->build_fields_contact($location->ID);
-    $form = new \Proud\Core\FormHelper( 'proud-location-contact', $this->fields );
-    $form->printFields();
-  }
-
-  public function display_description_meta_box( $location ) {
-  }
-
 
   /**
-   * Saves contact metadata fields 
+   * Called on form creation
+   * @param $displaying : false if just building form, true if about to display
+   * Use displaying:true to do any difficult loading that should only occur when
+   * the form actually will display
    */
-  public function add_location_fields( $id, $location ) {
-    if ( $location->post_type == $this->post_type ) {
-      if (empty($_POST['lat']) || empty($_POST['lng'])) {
-        // @todo: use google_api_key here?
-        $url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . urlencode($this->address_string($_POST));
-        $response = wp_remote_get( $url );
-        if( is_array($response) ) {
-          $body = json_decode($response['body']);
-          if ( !empty($body->results[0]) ) {
-            $geo = $body->results[0]->geometry->location; // use the content
-            print_r($geo);
-            $_POST['lat'] = $geo->lat;
-            $_POST['lng'] = $geo->lng;
-          }
-        }
-      }
-
-      foreach ($this->build_fields() as $key => $field) {
-        if ( !empty( $_POST[$key] ) ) {  // @todo: check if it has been set already to allow clearing of value
-          update_post_meta( $id, $key, $_POST[$key] );
-        }
-      }
+  public function set_fields( $displaying ) {
+    // Already set, no loading necessary
+    if( $displaying ) {
+      return;
     }
+
+    $this->fields = [  
+      'address' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Address'),
+        '#args' => array('autocomplete' => 'false')
+      ],
+      'address2' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Address 2'),
+      ],
+      'city' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('City'),
+      ],
+      'state' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('State'),
+      ],
+      'zip' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Zip'),
+      ],
+      'custom_latlng' => [
+        '#type' => 'checkbox',
+        '#title' => __pcHelp('Customize lat/lng'),
+        '#return_value' => '1',
+        '#label_above' => false,
+        '#replace_title' => __pcHelp( 'Enter custom Latitude/Longitude' ),
+      ],
+      'lat' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Latitude'),
+        '#states' => [
+          'visible' => [
+            'custom_latlng' => [
+              'operator' => '==',
+              'value' => ['1'],
+              'glue' => '||'
+            ],
+          ],
+        ],
+      ],
+      'lng' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Longitude'),
+        '#description' => __pcHelp('To automatically geocode the lat/lng from your address fields, leave both the Latitude and Longitude fields blank.'),
+        '#states' => [
+          'visible' => [
+            'custom_latlng' => [
+              'operator' => '==',
+              'value' => ['1'],
+              'glue' => '||'
+            ],
+          ],
+        ],
+      ],
+      'location_html' => [
+        '#type' => 'html',
+        '#html' => '<hr><p><strong>Contact Information</strong></p>',
+      ],
+      'email' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Email'),
+      ],
+      'phone' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Phone'),
+      ],
+      'website' => [
+        '#type' => 'text',
+        '#title' => __pcHelp('Website'),
+      ],
+      'hours' => [
+        '#type' => 'textarea',
+        '#title' => __pcHelp('Hours'),
+      ],
+    ];
+  }
+
+  /**
+   * Prints form
+   */
+  public function settings_content( $post ) {
+    parent::settings_content( $post );
+    // Enqueue JS 
+    $path = plugins_url('assets/',__FILE__);
+    wp_enqueue_script( 'google-places-api', '//maps.googleapis.com/maps/api/js?key='.get_option('google_api_key', true) .'&libraries=places' );
+    // Autocomplete
+    wp_register_script( 'google-places-field', $path . 'google-places.js' );
+    // Get field ids
+    $options = $this->get_field_ids();
+    // Set global lat / lng
+    $options['lat'] = get_option('lat', true);
+    $options['lng'] = get_option('lng', true);
+    wp_localize_script( 'google-places-field', 'proud_location', $options );
+    wp_enqueue_script( 'google-places-field' );
+
   }
 
   /**
@@ -344,7 +279,59 @@ class ProudLocation extends \ProudPlugin {
       $location['city'] . ', ' . $location['state'] . ' ' . $location['zip'];
   }
 
-} // class
+  /** 
+   * Saves form values
+   */
+  public function save_meta( $post_id, $post, $update ) {
+    // Grab form values from Request
+    $values = $this->validate_values( $post );
+    if( !empty( $values ) ) {
+      if( empty( $values['lat'] ) || empty( $values['lat'] ) ) {
+        // @todo: use google_api_key here?
+        $url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . urlencode( $this->address_string( $values ) );
+        $response = wp_remote_get( $url );
+        if( is_array($response) ) {
+          $body = json_decode($response['body']);
+          if ( !empty($body->results[0]) ) {
+            $geo = $body->results[0]->geometry->location; // use the content
+            print_r($geo);
+            $values['lat'] = $geo->lat;
+            $values['lng'] = $geo->lng;
+          }
+        }
+      }
+      $this->save_all( $values, $post_id );
+    }
+  }
+}
+if( is_admin() )
+  new LocationAddress;
 
+// Location desc meta box (empty for body)
+class LocationDescription extends \ProudMetaBox {
 
-new ProudLocation;
+  public $options = [  // Meta options, key => default                             
+  ];
+
+  public function __construct() {
+    parent::__construct( 
+      'location_description', // key
+      'Description', // title
+      'proud_location', // screen
+      'normal',  // position
+      'high' // priority
+    );
+  }
+
+  /**
+   * Called on form creation
+   * @param $displaying : false if just building form, true if about to display
+   * Use displaying:true to do any difficult loading that should only occur when
+   * the form actually will display
+   */
+  public function set_fields( $displaying ) {
+    $this->fields = [];
+  }
+}
+if( is_admin() )
+  new LocationDescription;
