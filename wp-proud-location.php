@@ -335,3 +335,68 @@ class LocationDescription extends \ProudMetaBox {
 }
 if( is_admin() )
   new LocationDescription;
+
+
+// Location desc meta box (empty for body)
+class LocationLayer extends \ProudTermMetaBox {
+
+  public function __construct() {
+    parent::__construct( 
+      'location-taxonomy', // key
+      'Settings', // title
+      'proud_location', // screen
+      10,  // position
+      2 // priority
+    );
+  }
+
+  private function colors() {
+    return [
+      '' => ' - Select - ',
+      '#ED9356' => 'Orange',
+      '#456D9C' => 'Blue',
+      '#E76C6D' => 'Red',
+      '#5A97C4' => 'Dark blue',
+      '#4DC3FF' => 'Baby blue',
+      '#9BBF6A' => 'Green',
+    ];
+  }
+
+  /**
+   * Called on form creation
+   * @param $displaying : false if just building form, true if about to display
+   * Use displaying:true to do any difficult loading that should only occur when
+   * the form actually will display
+   */
+  public function set_fields( $displaying ) {
+    // Already set, no loading necessary
+    if( $displaying ) {
+      return;
+    }
+    global $proudcore;
+
+    $this->fields = [  
+      'icon' => [
+        '#title' => 'Icon',
+        '#type' => 'fa-icon',
+        '#default_value' => '',
+        '#to_js_settings' => false
+      ],
+      'color' => [
+        '#title' => 'Color',
+        '#type' => 'select',
+        '#options' => $this->colors(),
+        '#default_value' => '',
+        '#to_js_settings' => false
+      ],
+      'markup' => [
+        '#type' => 'html',
+        '#html' => '<style type="text/css">.term-description-wrap { display: none; }</style>',
+      ],
+    ];
+  }
+
+}
+if( is_admin() )
+  new LocationLayer;
+
