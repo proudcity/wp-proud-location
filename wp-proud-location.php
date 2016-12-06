@@ -339,8 +339,13 @@ if( is_admin() )
 
 // Location desc meta box (empty for body)
 class LocationLayer extends \ProudTermMetaBox {
+  public $options = [  // Meta options, key => default                             
+    'icon' => '',
+    'color' => '',
+  ];
 
   public function __construct() {
+
     parent::__construct( 
       'location-taxonomy', // key
       'Settings', // title
