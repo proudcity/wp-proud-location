@@ -102,7 +102,7 @@ class ProudLocation extends \ProudPlugin {
   }
 
   public function location_rest_support() {
-    register_api_field( 'proud_location',
+    register_rest_field( 'proud_location',
           'meta',
           array(
               'get_callback'    => array( $this, 'location_rest_metadata' ),
