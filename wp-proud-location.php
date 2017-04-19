@@ -117,15 +117,26 @@ class ProudLocation extends \ProudPlugin {
    * Add metadata to the post response
    */
   public function location_rest_metadata( $object, $field_name, $request ) {
+
       $Address = new LocationAddress;
       $return = $Address->get_options( $object[ 'id' ] );
       $return['terms'] = wp_get_post_terms( $object['id'], $this->taxonomy, array( "fields" => "all" ) );
+
+      $term_layer = '';
       foreach ( $return['terms'] as $term ) {
         if ( empty( $return['icon'] ) && $term->slug != 'featured' && $term->slug != 'all' ) {
-          $return['icon'] = $term->slug;
+          $term_layer = $term;
         }
       }
+      // Try to attach taxonomy icon, color
+      if( isset( $term_layer->term_id ) ) {
+        $meta = get_term_meta( $term_layer->term_id );
+        $return['icon'] = !empty( $meta['icon'] ) ? $meta['icon'][0] : '';
+        $return['color'] = !empty( $meta['color'] ) ? $meta['color'][0] : '';
+        $return['active_term'] = $term_layer->slug;
+      }
       return $return;
+
   }
 } // class
 new ProudLocation;
