@@ -1,6 +1,6 @@
 {
-    "name" : "proudcity/wp-proud-payment",
-    "description" : "Declares an Payment custom post type.",
+    "name" : "proudcity/wp-proud-location",
+    "description" : "Declares an Location custom post type and Location Layer taxonomy.",
     "type" : "wordpress-plugin",
     "keywords" : [ "wordpress", "proudcity" ],
     "license" : "GPL-2.0+",
