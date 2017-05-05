@@ -117,15 +117,35 @@ class ProudLocation extends \ProudPlugin {
    * Add metadata to the post response
    */
   public function location_rest_metadata( $object, $field_name, $request ) {
-      $Address = new LocationAddress;
-      $return = $Address->get_options( $object[ 'id' ] );
-      $return['terms'] = wp_get_post_terms( $object['id'], $this->taxonomy, array( "fields" => "all" ) );
-      foreach ( $return['terms'] as $term ) {
-        if ( empty( $return['icon'] ) && $term->slug != 'featured' && $term->slug != 'all' ) {
-          $return['icon'] = $term->slug;
-        }
+    $Address = new LocationAddress;
+    $return = $Address->get_options( $object[ 'id' ] );
+    // Get our terms
+    $return['terms'] = wp_get_post_terms( $object['id'], $this->taxonomy, array( "fields" => "all" ) );
+    // Try to get primary term from SEO
+    if( class_exists( '\\WPSEO_Primary_Term' ) ) {
+      $primary = new \WPSEO_Primary_Term($this->taxonomy, $object[ 'id' ]);
+      $primary_term = $primary->get_primary_term();
+    }
+    $term_layer = null;
+    foreach ( $return['terms'] as $term ) {
+      // We have a primary term, so use that
+      if ( $primary_term && $term->term_id === $primary_term ) {
+        $term_layer = $term;
+        break;
       }
-      return $return;
+      if ( empty( $return['icon'] ) && $term->slug != 'featured' && $term->slug != 'all' ) {
+        $term_layer = $term;
+      }
+    }
+    // Try to attach taxonomy icon, color
+    if( isset( $term_layer->term_id ) ) {
+      $meta = get_term_meta( $term_layer->term_id );
+      $return['icon'] = !empty( $meta['icon'] ) ? $meta['icon'][0] : '';
+      $return['color'] = !empty( $meta['color'] ) ? $meta['color'][0] : '';
+      $return['active_term'] = $term_layer->slug;
+    }
+    return $return;
+
   }
 } // class
 new ProudLocation;
