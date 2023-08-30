@@ -3,7 +3,7 @@
 Plugin Name: Proud Location
 Plugin URI: http://proudcity.com/
 Description: Declares an Location custom post type.
-Version: 1.0
+Version: 2023.08.30.0721
 Author: ProudCity
 Author URI: http://proudcity.com/
 License: Affero GPL v3
@@ -44,45 +44,46 @@ class ProudLocation extends \ProudPlugin {
   }
 
 
-  public function create_location() {
-      $labels = array(
-          'name'               => _x( 'Locations', 'post name', 'wp-location' ),
-          'singular_name'      => _x( 'Location', 'post type singular name', 'wp-location' ),
-          'menu_name'          => _x( 'Locations', 'admin menu', 'wp-location' ),
-          'name_admin_bar'     => _x( 'Location', 'add new on admin bar', 'wp-location' ),
-          'add_new'            => _x( 'Add New', 'location', 'wp-location' ),
-          'add_new_item'       => __( 'Add New Location', 'wp-location' ),
-          'new_item'           => __( 'New Location', 'wp-location' ),
-          'edit_item'          => __( 'Edit Location', 'wp-location' ),
-          'view_item'          => __( 'View Location', 'wp-location' ),
-          'all_items'          => __( 'All Locations', 'wp-location' ),
-          'search_items'       => __( 'Search location', 'wp-location' ),
-          'parent_item_colon'  => __( 'Parent location:', 'wp-location' ),
-          'not_found'          => __( 'No locations found.', 'wp-location' ),
-          'not_found_in_trash' => __( 'No locations found in Trash.', 'wp-location' )
-      );
+	public function create_location() {
+		$labels = array(
+			'name'               => _x( 'Locations', 'post name', 'wp-location' ),
+			'singular_name'      => _x( 'Location', 'post type singular name', 'wp-location' ),
+			'menu_name'          => _x( 'Locations', 'admin menu', 'wp-location' ),
+			'name_admin_bar'     => _x( 'Location', 'add new on admin bar', 'wp-location' ),
+			'add_new'            => _x( 'Add New', 'location', 'wp-location' ),
+			'add_new_item'       => __( 'Add New Location', 'wp-location' ),
+			'new_item'           => __( 'New Location', 'wp-location' ),
+			'edit_item'          => __( 'Edit Location', 'wp-location' ),
+			'view_item'          => __( 'View Location', 'wp-location' ),
+			'all_items'          => __( 'All Locations', 'wp-location' ),
+			'search_items'       => __( 'Search location', 'wp-location' ),
+			'parent_item_colon'  => __( 'Parent location:', 'wp-location' ),
+			'not_found'          => __( 'No locations found.', 'wp-location' ),
+			'not_found_in_trash' => __( 'No locations found in Trash.', 'wp-location' )
+		);
 
-      $args = array(
-          'labels'             => $labels,
-          'description'        => __( 'Description.', 'wp-location' ),
-          'public'             => true,
-          'publicly_queryable' => true,
-          'show_ui'            => true,
-          'show_in_menu'       => true,
-          'query_var'          => true,
-          'rewrite'            => array( 'slug' => 'locations' ),
-          'capability_type'    => 'post',
-          'has_archive'        => false,
-          'hierarchical'       => false,
-          'menu_position'      => null,
-          'show_in_rest'       => true,
-          'rest_base'          => 'locations',
-          'rest_controller_class' => 'WP_REST_Posts_Controller',
-          'supports'           => array( 'title', 'editor', 'thumbnail',)
-      );
+		$args = array(
+			'labels'             => $labels,
+			'description'        => __( 'Description.', 'wp-location' ),
+			'public'             => true,
+			'publicly_queryable' => true,
+			'show_ui'            => true,
+			'show_in_menu'       => true,
+			'menu_icon' 		=> 'dashicons-location-alt',
+			'query_var'          => true,
+			'rewrite'            => array( 'slug' => 'locations' ),
+			'capability_type'    => 'post',
+			'has_archive'        => false,
+			'hierarchical'       => false,
+			'menu_position'      => null,
+			'show_in_rest'       => true,
+			'rest_base'          => 'locations',
+			'rest_controller_class' => 'WP_REST_Posts_Controller',
+			'supports'           => array( 'title', 'editor', 'thumbnail',)
+		);
 
-      register_post_type( $this->post_type, $args );
-  }
+		register_post_type( $this->post_type, $args );
+	}
 
   function create_taxonomy() {
     register_taxonomy(
