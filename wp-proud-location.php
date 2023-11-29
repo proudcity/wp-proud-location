@@ -3,7 +3,7 @@
 Plugin Name: Proud Location
 Plugin URI: http://proudcity.com/
 Description: Declares an Location custom post type.
-Version: 2023.08.30.0723
+Version: 2023.11.28.1151
 Author: ProudCity
 Author URI: http://proudcity.com/
 License: Affero GPL v3
@@ -24,9 +24,6 @@ class ProudLocation extends \ProudPlugin {
       'textdomain'     => 'wp-proud-location',
       'plugin_path'    => __FILE__,
     ) );
-
-    $this->post_type = 'proud_location';
-    $this->taxonomy = 'location-taxonomy';
 
     $this->hook( 'init', 'create_location' );
     $this->hook( 'rest_api_init', 'location_rest_support' );
@@ -82,13 +79,13 @@ class ProudLocation extends \ProudPlugin {
 			'supports'           => array( 'title', 'editor', 'thumbnail',)
 		);
 
-		register_post_type( $this->post_type, $args );
+		register_post_type( 'proud_location', $args );
 	}
 
   function create_taxonomy() {
     register_taxonomy(
-        $this->taxonomy,
-        $this->post_type,
+        'location-taxonomy',
+        'proud_location',
         array(
             'labels' => array(
                 'name' => 'Location Layers',
@@ -121,10 +118,10 @@ class ProudLocation extends \ProudPlugin {
     $Address = new LocationAddress;
     $return = $Address->get_options( $object[ 'id' ] );
     // Get our terms
-    $return['terms'] = wp_get_post_terms( $object['id'], $this->taxonomy, array( "fields" => "all" ) );
+    $return['terms'] = wp_get_post_terms( $object['id'], 'location-taxonomy', array( "fields" => "all" ) );
     // Try to get primary term from SEO
     if( class_exists( '\\WPSEO_Primary_Term' ) ) {
-      $primary = new \WPSEO_Primary_Term($this->taxonomy, $object[ 'id' ]);
+      $primary = new \WPSEO_Primary_Term('location-taxonomy', $object[ 'id' ]);
       $primary_term = $primary->get_primary_term();
     }
     $term_layer = null;
@@ -154,7 +151,7 @@ new ProudLocation;
 // LocationAddress meta box
 class LocationAddress extends \ProudMetaBox {
 
-  public $options = [  // Meta options, key => default                             
+  public $options = [  // Meta options, key => default
     'address' => '',
     'address2' => '',
     'city' => '',
@@ -170,7 +167,7 @@ class LocationAddress extends \ProudMetaBox {
   ];
 
   public function __construct() {
-    parent::__construct( 
+    parent::__construct(
       'location_address', // key
       'Address', // title
       'proud_location', // screen
@@ -191,7 +188,7 @@ class LocationAddress extends \ProudMetaBox {
       return;
     }
 
-    $this->fields = [  
+    $this->fields = [
       'address' => [
         '#type' => 'text',
         '#title' => __pcHelp('Address'),
@@ -275,7 +272,7 @@ class LocationAddress extends \ProudMetaBox {
    */
   public function settings_content( $post ) {
     parent::settings_content( $post );
-    // Enqueue JS 
+    // Enqueue JS
     $path = plugins_url('assets/',__FILE__);
     wp_enqueue_script( 'google-places-api', '//maps.googleapis.com/maps/api/js?key='.get_option('google_api_key', true) .'&libraries=places' );
     // Autocomplete
@@ -300,7 +297,7 @@ class LocationAddress extends \ProudMetaBox {
       $location['city'] . ', ' . $location['state'] . ' ' . $location['zip'];
   }
 
-  /** 
+  /**
    * Saves form values
    */
   public function save_meta( $post_id, $post, $update ) {
@@ -331,11 +328,11 @@ if( is_admin() )
 // Location desc meta box (empty for body)
 class LocationDescription extends \ProudMetaBox {
 
-  public $options = [  // Meta options, key => default                             
+  public $options = [  // Meta options, key => default
   ];
 
   public function __construct() {
-    parent::__construct( 
+    parent::__construct(
       'location_description', // key
       'Description', // title
       'proud_location', // screen
@@ -361,13 +358,13 @@ if( is_admin() )
 // Location desc meta box (empty for body)
 class LocationLayer extends \ProudTermMetaBox {
 
-  public $options = [  // Meta options, key => default                             
+  public $options = [  // Meta options, key => default
     'icon' => '',
     'color' => '',
   ];
 
   public function __construct() {
-    parent::__construct( 
+    parent::__construct(
       'location-taxonomy', // key
       'Settings' // title
     );
@@ -398,7 +395,7 @@ class LocationLayer extends \ProudTermMetaBox {
     }
     global $proudcore;
 
-    $this->fields = [  
+    $this->fields = [
       'icon' => [
         '#title' => 'Icon',
         '#type' => 'fa-icon',
