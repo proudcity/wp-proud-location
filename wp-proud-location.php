@@ -3,7 +3,7 @@
 Plugin Name: Proud Location
 Plugin URI: http://proudcity.com/
 Description: Declares an Location custom post type.
-Version: 2025.12.03.1119
+Version: 2025.12.03.1131
 Author: ProudCity
 Author URI: http://proudcity.com/
 License: Affero GPL v3
@@ -422,4 +422,4 @@ if (class_exists('ProudMetaBox')) {
     }
     if( is_admin() )
     new LocationLayer;
-
+}
