@@ -3,7 +3,7 @@
 Plugin Name: Proud Location
 Plugin URI: http://proudcity.com/
 Description: Declares an Location custom post type.
-Version: 2025.12.03.1131
+Version: 2026.06.12.1050
 Author: ProudCity
 Author URI: http://proudcity.com/
 License: Affero GPL v3
@@ -275,51 +275,173 @@ if (class_exists('ProudMetaBox')) {
         parent::settings_content( $post );
         // Enqueue JS
         $path = plugins_url('assets/',__FILE__);
-        wp_enqueue_script( 'google-places-api', '//maps.googleapis.com/maps/api/js?key='.get_option('google_api_key', true) .'&libraries=places' );
+        wp_enqueue_script( 'google-places-api', '//maps.googleapis.com/maps/api/js?key=' . get_option( 'google_api_key', '' ) . '&libraries=places' );
         // Autocomplete
         wp_register_script( 'google-places-field', $path . 'google-places.js' );
         // Get field ids
         $options = $this->get_field_ids();
         // Set global lat / lng
-        $options['lat'] = get_option('lat', true);
-        $options['lng'] = get_option('lng', true);
+        $options['lat'] = get_option( 'lat', '' );
+        $options['lng'] = get_option( 'lng', '' );
         wp_localize_script( 'google-places-field', 'proud_location', $options );
         wp_enqueue_script( 'google-places-field' );
-
     }
 
     /**
     * Returns a (string) $address from an (object|array) $location.
     */
-    public function address_string($location) {
+    public function address_string( $location ) {
         $location = (array) $location;
         return $location['address'] .
-        (!empty($location['address2']) ? ', ' . $location['address'] : '') .
-        $location['city'] . ', ' . $location['state'] . ' ' . $location['zip'];
+            ( !empty( $location['address2'] ) ? ', ' . $location['address2'] : '' ) .
+            $location['city'] . ', ' . $location['state'] . ' ' . $location['zip'];
+    }
+
+    /**
+     * Returns true when any address field in $values differs from stored meta.
+     *
+     * Trims and lowercases before comparing so whitespace-only edits do not
+     * trigger a needless geocode. An empty prior meta value (new post) also
+     * counts as changed.
+     */
+    private function address_changed( int $post_id, array $values ): bool {
+        foreach ( [ 'address', 'address2', 'city', 'state', 'zip' ] as $field ) {
+            $prior   = strtolower( trim( (string) get_post_meta( $post_id, $field, true ) ) );
+            $current = strtolower( trim( (string) ( $values[ $field ] ?? '' ) ) );
+            if ( $prior !== $current ) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Calls the Google Geocoding API and returns ['lat' => ..., 'lng' => ...]
+     * on success, or null on any failure.
+     *
+     * Failure cases (all preserve previous coords via null return):
+     *   - google_api_key option is empty
+     *   - address string is empty
+     *   - wp_remote_get returns WP_Error
+     *   - HTTP response code is not 200
+     *   - JSON decode fails or status is not 'OK'
+     *   - geometry.location.lat / .lng is missing
+     */
+    private function geocode_address( array $values ): ?array {
+        $key = get_option( 'google_api_key', '' );
+        if ( empty( $key ) ) {
+            return null;
+        }
+
+        // Skip if all substantive address fields are empty.
+        $has_address = ! empty( trim( (string) ( $values['address'] ?? '' ) ) )
+            || ! empty( trim( (string) ( $values['city'] ?? '' ) ) )
+            || ! empty( trim( (string) ( $values['zip'] ?? '' ) ) );
+        if ( ! $has_address ) {
+            return null;
+        }
+
+        $address_str = $this->address_string( $values );
+
+        $url      = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . rawurlencode( $address_str ) . '&key=' . rawurlencode( $key );
+        $response = wp_remote_get( $url );
+
+        if ( is_wp_error( $response ) ) {
+            error_log( 'wp-proud-location: geocode request failed for post.' );
+            return null;
+        }
+
+        if ( wp_remote_retrieve_response_code( $response ) !== 200 ) {
+            return null;
+        }
+
+        $body = json_decode( wp_remote_retrieve_body( $response ) );
+        if ( empty( $body ) || ! isset( $body->status ) || $body->status !== 'OK' ) {
+            error_log( 'wp-proud-location: geocode returned status ' . sanitize_text_field( (string) ( $body->status ?? 'unknown' ) ) );
+            return null;
+        }
+
+        $location = $body->results[0]->geometry->location ?? null;
+        if ( ! isset( $location->lat, $location->lng ) ) {
+            return null;
+        }
+
+        $lat = filter_var( $location->lat, FILTER_VALIDATE_FLOAT );
+        $lng = filter_var( $location->lng, FILTER_VALIDATE_FLOAT );
+        if ( $lat === false || $lng === false || $lat < -90 || $lat > 90 || $lng < -180 || $lng > 180 ) {
+            return null;
+        }
+
+        return [
+            'lat' => $lat,
+            'lng' => $lng,
+        ];
+    }
+
+    /**
+     * Applies geocoding logic to $values and returns the final $values array
+     * with lat/lng resolved.
+     *
+     * Geocode runs when:
+     *   - custom_latlng is not '1', AND one of:
+     *     - The address fields changed since the last save (or this is a new post), OR
+     *     - custom_latlng was previously '1' and is now being unset (transition), OR
+     *     - lat or lng is empty.
+     *
+     * On geocode failure (API key missing, network error, non-OK response) the
+     * previously stored lat/lng are preserved — coordinates are never blanked.
+     *
+     * @param int   $post_id Post being saved.
+     * @param array $values  Validated form values from validate_values().
+     * @return array $values with lat/lng set to the correct final values.
+     */
+    public function apply_geocode( int $post_id, array $values ): array {
+        // custom_latlng='1': user-supplied coords — never geocode.
+        if ( ! empty( $values['custom_latlng'] ) && $values['custom_latlng'] === '1' ) {
+            return $values;
+        }
+
+        $prior_custom = get_post_meta( $post_id, 'custom_latlng', true );
+        $custom_just_unchecked = ( $prior_custom === '1' && empty( $values['custom_latlng'] ) );
+
+        $needs_geocode = $custom_just_unchecked
+            || empty( $values['lat'] )
+            || empty( $values['lng'] )
+            || $this->address_changed( $post_id, $values );
+
+        if ( ! $needs_geocode ) {
+            return $values;
+        }
+
+        $coords = $this->geocode_address( $values );
+
+        if ( $coords === null ) {
+            // Failure: fall back to whatever was previously stored.
+            $values['lat'] = get_post_meta( $post_id, 'lat', true );
+            $values['lng'] = get_post_meta( $post_id, 'lng', true );
+        } else {
+            $values['lat'] = $coords['lat'];
+            $values['lng'] = $coords['lng'];
+        }
+
+        return $values;
     }
 
     /**
     * Saves form values
     */
     public function save_meta( $post_id, $post, $update ) {
-        // Grab form values from Request
-        $values = $this->validate_values( $post );
-        if( !empty( $values ) ) {
-        if( empty( $values['lat'] ) || empty( $values['lat'] ) ) {
-            // @todo: use google_api_key here?
-            $url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' . urlencode( $this->address_string( $values ) );
-            $response = wp_remote_get( $url );
-            if( is_array($response) ) {
-            $body = json_decode($response['body']);
-            if ( !empty($body->results[0]) ) {
-                $geo = $body->results[0]->geometry->location; // use the content
-                print_r($geo);
-                $values['lat'] = $geo->lat;
-                $values['lng'] = $geo->lng;
-            }
-            }
+        if ( wp_is_post_revision( $post_id ) ) {
+            return;
         }
-        $this->save_all( $values, $post_id );
+        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+            return;
+        }
+
+        $values = $this->validate_values( $post );
+        if ( ! empty( $values ) ) {
+            $values = $this->apply_geocode( $post_id, $values );
+            $this->save_all( $values, $post_id );
         }
     }
     }
