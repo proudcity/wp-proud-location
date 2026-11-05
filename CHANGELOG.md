@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026.11.05.1045
+
+- Location category colors now come from the central dark palette in wp-proud-core (wp-proudcity#2768). Only palette colors can be saved, old light colors map to dark ones, and map markers use the mapped color.
+- **Security:** location category `icon` term meta is validated on save and sanitized in the REST `meta` field (stored XSS in the service-center map marker).
+
 ## 2026-06-11
 
 - Fix lat/lng not recomputed when an existing location's address is edited (primary bug #2840)
