@@ -138,7 +138,7 @@ class ProudLocation extends \ProudPlugin {
     // Try to attach taxonomy icon, color
     if( isset( $term_layer->term_id ) ) {
       $meta = get_term_meta( $term_layer->term_id );
-      $return['icon'] = !empty( $meta['icon'] ) ? $meta['icon'][0] : '';
+      $return['icon'] = !empty( $meta['icon'] ) && function_exists( 'Proud\Core\proud_sanitize_icon_class' ) ? \Proud\Core\proud_sanitize_icon_class( $meta['icon'][0] ) : '';
       $return['color'] = !empty( $meta['color'] ) && function_exists( 'Proud\Core\proud_normalize_palette_color' ) ? \Proud\Core\proud_normalize_palette_color( $meta['color'][0] ) : '';
       $return['active_term'] = $term_layer->slug;
     }
@@ -527,6 +527,7 @@ if (class_exists('ProudMetaBox')) {
     public function save_all( $values, $term_id ) {
         if( is_array( $values ) ) {
         $values['color'] = isset( $values['color'] ) ? $this->normalize_color( $values['color'] ) : '';
+        $values['icon'] = isset( $values['icon'] ) && function_exists( 'Proud\Core\proud_sanitize_icon_class' ) ? \Proud\Core\proud_sanitize_icon_class( $values['icon'] ) : '';
         }
         parent::save_all( $values, $term_id );
     }
