@@ -139,7 +139,7 @@ class ProudLocation extends \ProudPlugin {
     if( isset( $term_layer->term_id ) ) {
       $meta = get_term_meta( $term_layer->term_id );
       $return['icon'] = !empty( $meta['icon'] ) ? $meta['icon'][0] : '';
-      $return['color'] = !empty( $meta['color'] ) ? $meta['color'][0] : '';
+      $return['color'] = !empty( $meta['color'] ) && function_exists( 'Proud\Core\proud_normalize_palette_color' ) ? \Proud\Core\proud_normalize_palette_color( $meta['color'][0] ) : '';
       $return['active_term'] = $term_layer->slug;
     }
     return $return;
@@ -495,16 +495,40 @@ if (class_exists('ProudMetaBox')) {
         );
     }
 
+    // The dark palette lives in wp-proud-core. If core is missing the select
+    // is left with only the empty option rather than fataling.
     private function colors() {
-        return [
-        '' => ' - Select - ',
-        '#ED9356' => 'Orange',
-        '#456D9C' => 'Blue',
-        '#E76C6D' => 'Red',
-        '#5A97C4' => 'Dark blue',
-        '#4DC3FF' => 'Baby blue',
-        '#9BBF6A' => 'Green',
-        ];
+        $colors = ['' => ' - Select - '];
+        if( function_exists( 'Proud\Core\proud_dark_palette' ) ) {
+        $colors += \Proud\Core\proud_dark_palette();
+        }
+        return $colors;
+    }
+
+    // Legacy colors map to their dark equivalent, anything not in the palette
+    // becomes empty.
+    private function normalize_color( $color ) {
+        if( !function_exists( 'Proud\Core\proud_normalize_palette_color' ) ) {
+        return '';
+        }
+        return \Proud\Core\proud_normalize_palette_color( $color );
+    }
+
+    // Preselects the normalized color so a legacy value does not show
+    // "- Select -" (and get saved back blank).
+    public function build_options( $id = null ) {
+        parent::build_options( $id );
+        if( isset( $this->options['color'] ) ) {
+        $this->options['color'] = $this->normalize_color( $this->options['color'] );
+        }
+    }
+
+    // Only palette colors (or empty) are ever stored.
+    public function save_all( $values, $term_id ) {
+        if( is_array( $values ) ) {
+        $values['color'] = isset( $values['color'] ) ? $this->normalize_color( $values['color'] ) : '';
+        }
+        parent::save_all( $values, $term_id );
     }
 
     /**
